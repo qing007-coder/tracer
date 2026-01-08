@@ -3,11 +3,12 @@ package span
 import "time"
 
 type Span struct {
-	TraceID   string
-	SpanID    string
-	ParentID  string
-	Operation string
-	Tags      []Tag
-	StartTime time.Time
-	duration  time.Duration
+	Operation  string
+	Context    SpanContext
+	Tags       []Tag
+	StartTime  time.Time
+	Duration   time.Duration
+	ProcessID  string
+	References []Reference
+	Baggage    map[string]string
 }
