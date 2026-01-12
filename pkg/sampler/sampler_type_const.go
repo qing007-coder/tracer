@@ -1,6 +1,8 @@
 package sampler
 
-import "tracer/pkg/config"
+import (
+	"tracer/pkg/config"
+)
 
 type SamplerConst struct {
 	Base
@@ -28,4 +30,8 @@ func (s *SamplerConst) init() {
 
 func (s *SamplerConst) IsSample(traceID, operation string) bool {
 	return s.Decision
+}
+
+func (s *SamplerConst) GetTags() []config.Tag {
+	return s.Tags
 }

@@ -4,13 +4,14 @@ import "tracer/pkg/config"
 
 type Sampler interface {
 	IsSample(traceID, operation string) bool
+	GetTags() []config.Tag
 	init()
 }
 
 func NewSampler(conf *config.Configuration) Sampler {
-	switch conf.Sample.Type {
+	switch conf.Sampler.Type {
 	case SamplerTypeConst:
-		return NewSamplerConst(conf.Sample.Param)
+		return NewSamplerConst(conf.Sampler.Param)
 	case SamplerTypeProbabilistic:
 	case SamplerTypeRateLimiting:
 	}
