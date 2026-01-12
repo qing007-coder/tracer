@@ -1,12 +1,25 @@
 package span
 
-import "time"
+import (
+	"time"
+	"tracer/pkg/config"
+)
 
 type Log struct {
 	Timestamp time.Time
-	Fields    []Tag
+	Fields    []config.Tag
 }
 
-func NewLog(timestamp time.Time, fields ...Tag) *Log {
+func String(key, value string) config.Tag {
+	return config.Tag{
+		Key:   key,
+		Value: value,
+	}
+}
 
+func Int(key string, value int) config.Tag {
+	return config.Tag{
+		Key:   key,
+		Value: value,
+	}
 }
