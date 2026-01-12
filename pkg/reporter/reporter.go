@@ -96,6 +96,6 @@ func (r *Reporter) Send() error {
 	return nil
 }
 
-func (r *Reporter) Store(span span.Span) {
+func (r *Reporter) Store(span span.ToModel) {
 	r.batch.Push(span)
 }
