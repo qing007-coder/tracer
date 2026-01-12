@@ -6,14 +6,13 @@ import (
 	"tracer/pkg/config"
 	"tracer/pkg/model"
 	"tracer/pkg/span"
-	"tracer/pkg/tracer"
 )
 
 type Batch struct {
 	mu       sync.Mutex
 	maxQueue uint
-	process  *tracer.Process
-	spans    []span.Span
+	process  *model.Process
+	spans    []span.ToModel
 	fullChan chan struct{}
 }
 
@@ -26,8 +25,8 @@ func NewBatch(conf *config.Configuration, fullChan chan struct{}, tags ...config
 
 func (b *Batch) init(conf *config.Configuration, fullCh chan struct{}, tags ...config.Tag) {
 	b.maxQueue = conf.Reporter.QueueSize
-	b.process = tracer.NewProcess(conf.ServiceName, tags...)
-	b.spans = make([]span.Span, 0, b.maxQueue)
+	b.process = model.NewProcess(conf.ServiceName, tags...)
+	b.spans = make([]span.ToModel, 0, b.maxQueue)
 	b.fullChan = fullCh
 }
 
@@ -38,7 +37,7 @@ func (b *Batch) Flush() {
 	b.spans = b.spans[:0] // 不加锁是因为用这个函数的时候已经锁了
 }
 
-func (b *Batch) Push(span span.Span) {
+func (b *Batch) Push(span span.ToModel) {
 	b.mu.Lock()
 	b.spans = append(b.spans, span)
 	isFull := len(b.spans) >= cap(b.spans)
