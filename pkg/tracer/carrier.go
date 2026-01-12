@@ -44,6 +44,6 @@ func (c *GRPCCarrier) Get(key string) interface{} {
 
 func (c *GRPCCarrier) Foreach(f func(key string, value interface{})) {
 	for k, v := range c.MD {
-		f(k, v)
+		f(k, v[0])
 	}
 }
