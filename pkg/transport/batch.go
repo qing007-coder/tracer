@@ -2,6 +2,7 @@ package transport
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 	"tracer/pkg/config"
 	"tracer/pkg/model"
@@ -64,9 +65,15 @@ func (b *Batch) GetData() ([]byte, error) {
 		Spans:   b.spans,
 	}
 
+	fmt.Println(p)
+
 	data, err := json.Marshal(&p)
 
 	b.Flush()
 
 	return data, err
+}
+
+func (b *Batch) IsEmpty() bool {
+	return len(b.spans) == 0
 }
