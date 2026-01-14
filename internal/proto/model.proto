@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package collector.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "tracer/internal/proto/pb";
+
+// 定义 Collector 服务接口
+service CollectorService {
+  // 导出批量数据包
+  rpc Export(BatchPackage) returns (ExportResponse);
+}
+
+// 对应你的 type BatchPackage struct
+message BatchPackage {
+  repeated Package packages = 1;
+}
+
+// 对应你的 type Package struct
+message Package {
+  Process process = 1;
+  repeated SpanModel spans = 2;
+}
+
+// 进程元数据
+message Process {
+  string service_name = 1;
+  string process_id = 2;
+  map<string, string> tags = 3;
+}
+
+// 具体的 Span 模型
+message SpanModel {
+  string operation = 1;
+  SpanContext context = 2;
+  map<string, string> tags = 3;
+
+  google.protobuf.Timestamp start_time = 4;
+  google.protobuf.Duration duration = 5;
+
+  repeated Reference references = 6;
+  repeated Log logs = 7;
+}
+
+// --- 辅助结构 ---
+
+message SpanContext {
+  string trace_id = 1;
+  string span_id = 2;
+}
+
+message Reference {
+  string trace_id = 1;
+  string span_id = 2;
+  string ref_type = 3; // e.g., ChildOf
+}
+
+message Log {
+  google.protobuf.Timestamp timestamp = 1;
+  map<string, string> fields = 2;
+}
+
+message ExportResponse {
+  bool success = 1;
+}
+
+
+// protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative model.proto
