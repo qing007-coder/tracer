@@ -81,6 +81,10 @@ func (r *Reporter) Run() {
 }
 
 func (r *Reporter) Send() error {
+	if r.batch.IsEmpty() {
+		return nil
+	}
+
 	data, err := r.batch.GetData()
 	if err != nil {
 		fmt.Println(err)

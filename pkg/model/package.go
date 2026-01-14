@@ -6,3 +6,7 @@ type Package struct {
 	Process Process
 	Spans   []span.ToModel
 }
+
+type BatchPackage struct {
+	Packages []Package
+}
