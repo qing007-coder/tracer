@@ -5,6 +5,7 @@ import (
 )
 
 type Process struct {
+	ID          string
 	ServiceName string
 	Tags        []config.Tag
 }
