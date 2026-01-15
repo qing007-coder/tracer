@@ -112,8 +112,11 @@ func convertSpans(spans []span.ToModel) []*pb.SpanModel {
 		sm := &pb.SpanModel{
 			Operation: s.Operation,
 			Context: &pb.SpanContext{
-				TraceId: s.Context.TraceID,
-				SpanId:  s.Context.SpanID,
+				TraceId:  s.Context.TraceID,
+				SpanId:   s.Context.SpanID,
+				Baggage:  s.Context.Baggage,
+				Sampled:  s.Context.Sampled,
+				ParentId: s.Context.ParentID,
 			},
 			Tags:      tagsToMap(s.Tags),
 			StartTime: timestamppb.New(s.StartTime),
