@@ -90,7 +90,6 @@ func (e *Exporter) BatchToModel(bp model.BatchPackage) *pb.BatchPackage {
 			Spans:   convertSpans(p.Spans),
 		})
 	}
-	fmt.Println(req)
 
 	return req
 }

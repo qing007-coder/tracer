@@ -65,7 +65,6 @@ func (b *Buffer) Listen() error {
 
 		batch = b.Enrich(batch)
 
-		fmt.Println("batch:", batch)
 		b.batchCh <- batch
 	}
 }

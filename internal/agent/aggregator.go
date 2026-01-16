@@ -43,7 +43,17 @@ func (a *Aggregator) Run() {
 	for {
 		select {
 		case batch := <-a.batchCh:
-			a.Append(batch)
+			if a.Append(batch) {
+				if !a.timer.Stop() {
+					select {
+					case <-a.timer.C:
+					default:
+
+					}
+				}
+
+				a.timer.Reset(a.duration)
+			}
 
 		case <-a.timer.C:
 			a.sendAll()
@@ -52,7 +62,7 @@ func (a *Aggregator) Run() {
 	}
 }
 
-func (a *Aggregator) Append(pkg model.Package) {
+func (a *Aggregator) Append(pkg model.Package) bool {
 	service := pkg.Process.ServiceName
 
 	a.mu.Lock()
@@ -74,7 +84,10 @@ func (a *Aggregator) Append(pkg model.Package) {
 	if isFull {
 		a.Send(service)
 		a.Flush(service)
+		return true
 	}
+
+	return false
 }
 
 func (a *Aggregator) Send(serviceName string) {
