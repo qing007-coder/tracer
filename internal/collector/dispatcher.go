@@ -56,7 +56,6 @@ func (d *Dispatcher) Run() {
 	for {
 		select {
 		case spans, ok := <-d.batchChan:
-			fmt.Println(111)
 			if !ok {
 				fmt.Println("out")
 				return
@@ -95,7 +94,7 @@ func (d *Dispatcher) listen() {
 			if !ok {
 				return
 			}
-			log.Println("success:", success)
+			log.Println("success:", success.Key)
 		}
 	}
 }
