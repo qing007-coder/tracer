@@ -67,13 +67,21 @@ func (t *Tracer) StartSpan(operation string, options ...Option) *span.Span {
 		baggage = startSpanOption.Baggage
 	}
 
+	var parentID string
+	for _, reference := range startSpanOption.References {
+		if reference.RefType == span.ChildOf {
+			parentID = reference.SpanID
+		}
+	}
+
 	return &span.Span{
 		Operation: operation,
 		Context: span.SpanContext{
-			TraceID: traceID,
-			SpanID:  utils.CreateID(),
-			Sampled: t.Sampler.IsSample(traceID, operation),
-			Baggage: baggage,
+			TraceID:  traceID,
+			SpanID:   utils.CreateID(),
+			ParentID: parentID,
+			Sampled:  t.Sampler.IsSample(traceID, operation),
+			Baggage:  baggage,
 		},
 		StartTime: time.Now(),
 		ProcessID: utils.CreateID(),
