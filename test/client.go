@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"google.golang.org/grpc/metadata"
 	"time"
 	"tracer/pkg/config"
@@ -66,6 +67,8 @@ func main() {
 	//fmt.Println(spanCtx)
 	childSpan := t.StartSpan("order_service", tracer.ChildOf(spanCtx))
 	//fmt.Println(childSpan)
+	time.Sleep(time.Second)
+	fmt.Println(childSpan.Context.ParentID)
 
 	childSpan.Finish()
 
