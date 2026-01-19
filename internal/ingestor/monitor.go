@@ -1,6 +1,7 @@
 package ingestor
 
 import (
+	"hash/fnv"
 	"sync"
 	"time"
 )
@@ -12,21 +13,22 @@ type Monitor struct {
 	currentPos int
 	slotNum    int
 	interval   time.Duration
-	Handler    func(map[string]struct{})
+	signalChan []chan string
 }
 
-func NewMonitor(slotNum int, interval time.Duration, handler func(map[string]struct{})) *Monitor {
+func NewMonitor(slotNum int, interval time.Duration, signalChan []chan string) *Monitor {
 	m := new(Monitor)
-	m.init(slotNum, interval, handler)
+	m.init(slotNum, interval, signalChan)
 	return m
 }
 
-func (m *Monitor) init(slotNum int, interval time.Duration, handler func(map[string]struct{})) {
+func (m *Monitor) init(slotNum int, interval time.Duration, signalChan []chan string) {
 	m.currentPos = 0
 	m.interval = interval
+	m.slotNum = slotNum
 	m.ticker = time.NewTicker(m.interval)
 	m.slots = make([]map[string]struct{}, slotNum)
-	m.Handler = handler
+	m.signalChan = signalChan
 	for i := 0; i < slotNum; i++ {
 		m.slots[i] = make(map[string]struct{})
 	}
@@ -52,15 +54,29 @@ func (m *Monitor) Tick() {
 	m.currentPos = (m.currentPos + 1) % m.slotNum
 	m.mu.Unlock()
 
-	if len(data) > 0 {
-		go m.Handler(data)
+	if len(data) == 0 {
+		return
+	}
+
+	for traceID, _ := range data {
+		id := m.route(traceID)
+		m.signalChan[id] <- traceID
 	}
 }
 
-func (m *Monitor) Add(traceID string, position int) {
+func (m *Monitor) Add(traceID string, duration int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	index := (m.currentPos + position) % m.slotNum
+	index := (m.currentPos + duration) % m.slotNum
 	m.slots[index][traceID] = struct{}{}
+}
+
+func (m *Monitor) route(traceID string) int {
+	h := fnv.New32a()
+	_, err := h.Write([]byte(traceID))
+	if err != nil {
+		return 0
+	}
+	return int(h.Sum32()) % len(m.signalChan)
 }
