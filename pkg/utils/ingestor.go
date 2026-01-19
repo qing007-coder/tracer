@@ -80,6 +80,7 @@ func FlatSpanToClickHouseSpan(fs *model.FlatSpan) *model.StorageSpan {
 
 	// Logs → Events
 	eventNames, eventTimes, eventAttrs := flattenLogs(fs.Logs)
+	fmt.Println("parent_id", fs.ParentSpanID)
 
 	return &model.StorageSpan{
 		TraceID:      fs.TraceID,
@@ -104,9 +105,6 @@ func FlatSpanToClickHouseSpan(fs *model.FlatSpan) *model.StorageSpan {
 
 		ProcessID:     fs.ProcessID,
 		ResourceAttrs: mapToStringMap(fs.ProcessTags),
-
-		Sampled: fs.Sampled,
-		Baggage: mapToStringMap(fs.Baggage),
 
 		TimestampUs: fs.StartTime,
 	}

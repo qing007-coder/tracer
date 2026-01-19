@@ -32,10 +32,6 @@ type StorageSpan struct {
 	ProcessID     string
 	ResourceAttrs map[string]string
 
-	// 采样 & 其他
-	Sampled bool
-	Baggage map[string]string
-
 	// 用于分区 & TTL
 	TimestampUs int64
 }
