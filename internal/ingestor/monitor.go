@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// Monitor tracks active traces and signals when they should be flushed (e.g., after a timeout).
 type Monitor struct {
 	mu         sync.Mutex
 	ticker     *time.Ticker
@@ -16,12 +17,14 @@ type Monitor struct {
 	signalChan []chan string
 }
 
+// NewMonitor creates a new Monitor.
 func NewMonitor(slotNum int, interval time.Duration, signalChan []chan string) *Monitor {
 	m := new(Monitor)
 	m.init(slotNum, interval, signalChan)
 	return m
 }
 
+// init initializes the time wheel slots for monitoring.
 func (m *Monitor) init(slotNum int, interval time.Duration, signalChan []chan string) {
 	m.currentPos = 0
 	m.interval = interval
@@ -34,6 +37,7 @@ func (m *Monitor) init(slotNum int, interval time.Duration, signalChan []chan st
 	}
 }
 
+// Start runs the monitor tick loop.
 func (m *Monitor) Start() {
 	go func() {
 		for {
@@ -46,6 +50,7 @@ func (m *Monitor) Start() {
 	}()
 }
 
+// Tick advances the time wheel, flushing traces in the current slot.
 func (m *Monitor) Tick() {
 	m.mu.Lock()
 
@@ -64,6 +69,7 @@ func (m *Monitor) Tick() {
 	}
 }
 
+// Add registers a trace ID to be flushed after a certain duration.
 func (m *Monitor) Add(traceID string, duration int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -72,6 +78,7 @@ func (m *Monitor) Add(traceID string, duration int) {
 	m.slots[index][traceID] = struct{}{}
 }
 
+// route determines which signal channel to use based on the trace ID.
 func (m *Monitor) route(traceID string) int {
 	h := fnv.New32a()
 	_, err := h.Write([]byte(traceID))

@@ -5,6 +5,8 @@ import (
 	"tracer/pkg/config"
 )
 
+// Span represents a unit of work in a trace.
+// It contains metadata such as operation name, start time, duration, tags, and logs.
 type Span struct {
 	Operation  string
 	Context    SpanContext
@@ -17,6 +19,8 @@ type Span struct {
 	Logs       []Log
 }
 
+// Finish marks the end of the span execution.
+// It calculates the duration and triggers the OnFinish callback if the span is sampled.
 func (s *Span) Finish() {
 	s.Duration = time.Since(s.StartTime)
 	if !s.Context.Sampled {
@@ -26,6 +30,8 @@ func (s *Span) Finish() {
 	s.OnFinish(s.ToModel())
 }
 
+// SetTag adds or updates a tag on the span.
+// If the tag with the given key already exists, its value is updated.
 func (s *Span) SetTag(key string, value interface{}) {
 	for _, tag := range s.Tags {
 		if tag.Key == key {
@@ -40,10 +46,12 @@ func (s *Span) SetTag(key string, value interface{}) {
 	})
 }
 
+// SetBaggageItem sets a key:value pair on the span context that propagates to child spans.
 func (s *Span) SetBaggageItem(key, value string) {
 	s.Context.Baggage[key] = value
 }
 
+// GetBaggageItem retrieves the value of a baggage item from the span context.
 func (s *Span) GetBaggageItem(key string) string {
 	return s.Context.Baggage[key]
 }

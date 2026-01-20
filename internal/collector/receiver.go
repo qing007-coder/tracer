@@ -12,6 +12,7 @@ import (
 	"tracer/pkg/model"
 )
 
+// Receiver handles incoming gRPC requests from Agents.
 type Receiver struct {
 	pb.UnimplementedCollectorServiceServer
 	server    *grpc.Server
@@ -20,6 +21,7 @@ type Receiver struct {
 	validator *Validator
 }
 
+// NewReceiver creates a new Receiver.
 func NewReceiver(spanCh chan<- *model.FlatSpan) (*Receiver, error) {
 	r := new(Receiver)
 	if err := r.init(spanCh); err != nil {
@@ -29,6 +31,7 @@ func NewReceiver(spanCh chan<- *model.FlatSpan) (*Receiver, error) {
 	return r, nil
 }
 
+// init initializes the gRPC server and validator.
 func (r *Receiver) init(spanCh chan<- *model.FlatSpan) error {
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
@@ -50,6 +53,7 @@ func (r *Receiver) init(spanCh chan<- *model.FlatSpan) error {
 	return nil
 }
 
+// Run starts the gRPC server.
 func (r *Receiver) Run() {
 	log.Println("gRPC 服务端启动在 :50051...")
 	if err := r.server.Serve(r.lis); err != nil {
@@ -57,6 +61,8 @@ func (r *Receiver) Run() {
 	}
 }
 
+// Export implements the gRPC Export method to receive trace data.
+// It validates the batch and pushes flattened spans to the span channel.
 func (r *Receiver) Export(ctx context.Context, batchPkg *pb.BatchPackage) (*pb.ExportResponse, error) {
 	if err := r.validator.Validate(batchPkg); err != nil {
 		return nil, err
@@ -73,7 +79,7 @@ func (r *Receiver) Export(ctx context.Context, batchPkg *pb.BatchPackage) (*pb.E
 	}, nil
 }
 
-// ConvertBatchToFlatSpans 转换函数
+// ConvertBatchToFlatSpans converts a protobuf BatchPackage to a slice of FlatSpans.
 func (r *Receiver) ConvertBatchToFlatSpans(batchPkg *pb.BatchPackage) []*model.FlatSpan {
 	var allFlatSpans []*model.FlatSpan
 

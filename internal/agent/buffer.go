@@ -8,13 +8,14 @@ import (
 	"tracer/pkg/model"
 )
 
-// Buffer 接受桶
+// Buffer receives incoming spans via UDP.
 type Buffer struct {
 	conn    *net.UDPConn
 	addr    *net.UDPAddr
 	batchCh chan<- model.Package
 }
 
+// NewBuffer creates a new Buffer listening on the specified IP address.
 func NewBuffer(ipAddr string, batchCh chan<- model.Package) (*Buffer, error) {
 	b := new(Buffer)
 	if err := b.init(ipAddr, batchCh); err != nil {
@@ -24,6 +25,7 @@ func NewBuffer(ipAddr string, batchCh chan<- model.Package) (*Buffer, error) {
 	return b, nil
 }
 
+// init initializes the UDP connection.
 func (b *Buffer) init(ipAddr string, batchCh chan<- model.Package) error {
 	addr, err := net.ResolveUDPAddr("udp", ipAddr)
 	if err != nil {
@@ -42,6 +44,7 @@ func (b *Buffer) init(ipAddr string, batchCh chan<- model.Package) error {
 	return nil
 }
 
+// close closes the UDP connection.
 func (b *Buffer) close() {
 	err := b.conn.Close()
 	if err != nil {
@@ -50,6 +53,7 @@ func (b *Buffer) close() {
 	}
 }
 
+// Listen starts listening for incoming UDP packets and processes them.
 func (b *Buffer) Listen() error {
 	for {
 		buf := make([]byte, 65535)
@@ -69,6 +73,7 @@ func (b *Buffer) Listen() error {
 	}
 }
 
+// Enrich adds additional metadata (like agent tags) to the package.
 func (b *Buffer) Enrich(batch model.Package) model.Package {
 	batch.Process.Tags = append(batch.Process.Tags, config.Tag{
 		Key:   "agent.host",

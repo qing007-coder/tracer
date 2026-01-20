@@ -14,6 +14,7 @@ import (
 	"tracer/pkg/model"
 )
 
+// Storage handles writing spans to ClickHouse.
 type Storage struct {
 	ctx          context.Context
 	mu           sync.Mutex
@@ -28,6 +29,7 @@ type Storage struct {
 	snapshotChan chan []*model.StorageSpan
 }
 
+// NewStorage creates a new Storage instance.
 func NewStorage(conf Configuration) *Storage {
 	s := new(Storage)
 	s.init(conf)
@@ -35,6 +37,7 @@ func NewStorage(conf Configuration) *Storage {
 	return s
 }
 
+// init initializes the Storage with ClickHouse connection and configuration.
 func (s *Storage) init(conf Configuration) {
 	s.batchData = make([]*model.StorageSpan, 0)
 	s.sampler = NewTailSampler(1, time.Second*2)
@@ -70,6 +73,7 @@ func (s *Storage) init(conf Configuration) {
 	s.conn = conn
 }
 
+// Run starts the storage worker loops.
 func (s *Storage) Run() {
 	go s.retryWorker(s.ctx)
 	for i := 0; i < s.workerNum; i++ {
@@ -95,6 +99,8 @@ func (s *Storage) Run() {
 	}
 }
 
+// Store adds spans to the batch and flushes if full.
+// It applies tail sampling before storing.
 func (s *Storage) Store(spans []*model.StorageSpan) bool {
 	if !s.sampler.IsSampled(spans) || len(spans) == 0 {
 		return false

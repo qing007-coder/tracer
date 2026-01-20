@@ -8,6 +8,8 @@ import (
 	"tracer/pkg/span"
 )
 
+// Aggregator batches spans by service name.
+// It sends batches when either the time duration or max queue size is reached.
 type Aggregator struct {
 	mu           sync.Mutex
 	batchCh      <-chan model.Package
@@ -18,6 +20,7 @@ type Aggregator struct {
 	duration     time.Duration
 }
 
+// NewAggregator creates a new Aggregator.
 func NewAggregator(
 	duration time.Duration,
 	batchCh <-chan model.Package,
@@ -35,10 +38,12 @@ func NewAggregator(
 	return a
 }
 
+// Start runs the aggregator loop in a goroutine.
 func (a *Aggregator) Start() {
 	go a.Run()
 }
 
+// Run listens for incoming packages and timer events.
 func (a *Aggregator) Run() {
 	for {
 		select {
@@ -62,12 +67,14 @@ func (a *Aggregator) Run() {
 	}
 }
 
+// Append adds a package to the aggregation buffer.
+// Returns true if the buffer for the service is full and was sent.
 func (a *Aggregator) Append(pkg model.Package) bool {
 	service := pkg.Process.ServiceName
 
 	a.mu.Lock()
 
-	// 第一次出现该 service，初始化
+	// Initialize buffer for service if not exists
 	bp, ok := a.batchPackage[service]
 	if !ok {
 		bp = &model.Package{
@@ -90,6 +97,7 @@ func (a *Aggregator) Append(pkg model.Package) bool {
 	return false
 }
 
+// Send sends the batched spans for a specific service to the output channel.
 func (a *Aggregator) Send(serviceName string) {
 	a.mu.Lock()
 	pkg, ok := a.batchPackage[serviceName]
@@ -112,20 +120,21 @@ func (a *Aggregator) Send(serviceName string) {
 
 	select {
 	case a.outputCh <- bp:
-		// 发送成功
+		// Sent successfully
 	default:
-		// 队列满了，直接丢弃这批数据并记录日志/指标
-		// 这样能保证 Agent 永远不会卡死
+		// Queue full, drop data to prevent blocking
 		log.Println("Aggregator output channel full, dropping batch")
 	}
 }
 
+// Flush clears the buffer for a specific service.
 func (a *Aggregator) Flush(serviceName string) {
 	a.mu.Lock()
 	delete(a.batchPackage, serviceName)
 	a.mu.Unlock()
 }
 
+// sendAll sends all buffered batches for all services.
 func (a *Aggregator) sendAll() {
 	a.mu.Lock()
 	snapshot := a.batchPackage

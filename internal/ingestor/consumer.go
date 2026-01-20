@@ -10,6 +10,7 @@ import (
 	"tracer/pkg/model"
 )
 
+// Consumer consumes messages from Kafka.
 type Consumer struct {
 	workerNum  int
 	group      sarama.ConsumerGroup
@@ -18,6 +19,7 @@ type Consumer struct {
 	normalizer *Normalizer
 }
 
+// NewConsumer creates a new Kafka consumer.
 func NewConsumer(conf Configuration) (*Consumer, error) {
 	c := new(Consumer)
 	err := c.init(conf)
@@ -28,6 +30,7 @@ func NewConsumer(conf Configuration) (*Consumer, error) {
 	return c, nil
 }
 
+// init initializes the Consumer with Sarama configuration and worker channels.
 func (c *Consumer) init(conf Configuration) error {
 	config := sarama.NewConfig()
 	config.Consumer.Offsets.Initial = sarama.OffsetNewest
@@ -45,6 +48,7 @@ func (c *Consumer) init(conf Configuration) error {
 	return nil
 }
 
+// Run starts the consumer loop.
 func (c *Consumer) Run() {
 	ctx := context.Background()
 
@@ -59,6 +63,7 @@ func (c *Consumer) Run() {
 	}
 }
 
+// HandleMessage processes a single Kafka message: unmarshal, validate, normalize, and route to worker.
 func (c *Consumer) HandleMessage(message *sarama.ConsumerMessage) {
 	span := new(model.FlatSpan)
 	if err := json.Unmarshal(message.Value, span); err != nil {
@@ -85,6 +90,7 @@ func (c *Consumer) HandleMessage(message *sarama.ConsumerMessage) {
 
 }
 
+// route calculates the worker ID based on TraceID to ensure same trace goes to same worker.
 func (c *Consumer) route(traceID string) int {
 	h := fnv.New32a()
 	_, err := h.Write([]byte(traceID))
@@ -94,9 +100,13 @@ func (c *Consumer) route(traceID string) int {
 	return int(h.Sum32()) % c.workerNum
 }
 
-func (c *Consumer) Setup(sarama.ConsumerGroupSession) error   { return nil }
+// Setup is run at the beginning of a new session, before ConsumeClaim.
+func (c *Consumer) Setup(sarama.ConsumerGroupSession) error { return nil }
+
+// Cleanup is run at the end of a session, once all ConsumeClaim goroutines have exited.
 func (c *Consumer) Cleanup(sarama.ConsumerGroupSession) error { return nil }
 
+// ConsumeClaim must start a consumer loop of ConsumerGroupClaim's Messages().
 func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
 		c.HandleMessage(msg)

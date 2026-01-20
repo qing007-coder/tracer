@@ -15,6 +15,7 @@ import (
 	"tracer/pkg/span"
 )
 
+// Exporter sends batched spans to the Collector via gRPC.
 type Exporter struct {
 	ctx       context.Context
 	WorkerNum int
@@ -22,6 +23,7 @@ type Exporter struct {
 	client    pb.CollectorServiceClient
 }
 
+// NewExporter creates a new Exporter.
 func NewExporter(workNum int, batchCh <-chan model.BatchPackage) (*Exporter, error) {
 	e := new(Exporter)
 	if err := e.init(workNum, batchCh); err != nil {
@@ -31,6 +33,7 @@ func NewExporter(workNum int, batchCh <-chan model.BatchPackage) (*Exporter, err
 	return e, nil
 }
 
+// init initializes the Exporter with gRPC connection and worker count.
 func (e *Exporter) init(workNum int, batchCh <-chan model.BatchPackage) error {
 	e.ctx = context.Background()
 	conn, err := grpc.NewClient("localhost:50051",
@@ -47,12 +50,14 @@ func (e *Exporter) init(workNum int, batchCh <-chan model.BatchPackage) error {
 	return nil
 }
 
+// Start launches the worker goroutines to consume batches.
 func (e *Exporter) Start() {
 	for i := 0; i < e.WorkerNum; i++ {
 		go e.Consume()
 	}
 }
 
+// Consume reads batches from the channel and exports them via gRPC.
 func (e *Exporter) Consume() {
 	for {
 		select {
@@ -74,7 +79,7 @@ func (e *Exporter) Consume() {
 
 }
 
-// BatchToModel 将业务模型转换为 PB 模型
+// BatchToModel converts the internal batch package to the protobuf BatchPackage.
 func (e *Exporter) BatchToModel(bp model.BatchPackage) *pb.BatchPackage {
 	if len(bp.Packages) == 0 {
 		return &pb.BatchPackage{}
@@ -94,7 +99,7 @@ func (e *Exporter) BatchToModel(bp model.BatchPackage) *pb.BatchPackage {
 	return req
 }
 
-// 转换 Process
+// convertProcess converts internal Process model to protobuf Process.
 func convertProcess(p model.Process) *pb.Process {
 	return &pb.Process{
 		ServiceName: p.ServiceName,

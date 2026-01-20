@@ -9,12 +9,14 @@ import (
 	"tracer/pkg/model"
 )
 
+// Dispatcher sends batches of spans to Kafka asynchronously.
 type Dispatcher struct {
 	workerNum int
 	producer  sarama.AsyncProducer
 	batchChan <-chan []*model.FlatSpan
 }
 
+// NewDispatcher creates a new Dispatcher.
 func NewDispatcher(workNum int, batchChan <-chan []*model.FlatSpan) (*Dispatcher, error) {
 	d := new(Dispatcher)
 	if err := d.init(workNum, batchChan); err != nil {
@@ -24,6 +26,7 @@ func NewDispatcher(workNum int, batchChan <-chan []*model.FlatSpan) (*Dispatcher
 	return d, nil
 }
 
+// init initializes the Kafka producer and dispatcher configuration.
 func (d *Dispatcher) init(workerNum int, batchChan <-chan []*model.FlatSpan) error {
 	config := sarama.NewConfig()
 	config.Producer.Return.Successes = true
@@ -45,6 +48,7 @@ func (d *Dispatcher) init(workerNum int, batchChan <-chan []*model.FlatSpan) err
 	return nil
 }
 
+// Start launches the listener for Kafka events and worker goroutines.
 func (d *Dispatcher) Start() {
 	go d.listen()
 	for i := 0; i < d.workerNum; i++ {
@@ -52,6 +56,7 @@ func (d *Dispatcher) Start() {
 	}
 }
 
+// Run consumes batches and sends individual spans to Kafka.
 func (d *Dispatcher) Run() {
 	for {
 		select {
@@ -68,6 +73,7 @@ func (d *Dispatcher) Run() {
 	}
 }
 
+// Send produces a single span message to the specified Kafka topic.
 func (d *Dispatcher) Send(topic string, key string, value *model.FlatSpan) {
 	data, err := json.Marshal(value)
 	if err != nil {
@@ -82,6 +88,7 @@ func (d *Dispatcher) Send(topic string, key string, value *model.FlatSpan) {
 	}
 }
 
+// listen monitors Kafka producer successes and errors.
 func (d *Dispatcher) listen() {
 	for {
 		select {

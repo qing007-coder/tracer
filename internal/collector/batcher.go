@@ -8,6 +8,8 @@ import (
 	"tracer/pkg/model"
 )
 
+// Batcher collects spans into batches before sending them to the dispatcher.
+// It helps reduce the number of small messages sent to Kafka.
 type Batcher struct {
 	mu          sync.Mutex
 	spanChan    <-chan *model.FlatSpan
@@ -19,6 +21,7 @@ type Batcher struct {
 	rateLimiter *RateLimiter
 }
 
+// NewBatcher creates a new Batcher.
 func NewBatcher(maxQueue uint, spanChan <-chan *model.FlatSpan, outputChan chan<- []*model.FlatSpan, duration time.Duration) (*Batcher, error) {
 	b := new(Batcher)
 	b.init(maxQueue, spanChan, outputChan, duration)
@@ -26,6 +29,7 @@ func NewBatcher(maxQueue uint, spanChan <-chan *model.FlatSpan, outputChan chan<
 	return b, nil
 }
 
+// init initializes the Batcher components.
 func (b *Batcher) init(maxQueue uint, spanChan <-chan *model.FlatSpan, outputChan chan<- []*model.FlatSpan, duration time.Duration) {
 	b.maxQueue = maxQueue
 	b.spanChan = spanChan
@@ -36,10 +40,12 @@ func (b *Batcher) init(maxQueue uint, spanChan <-chan *model.FlatSpan, outputCha
 	b.batchSpans = make([]*model.FlatSpan, 0, b.maxQueue)
 }
 
+// Start runs the batcher loop in a goroutine.
 func (b *Batcher) Start() {
 	go b.Run()
 }
 
+// Run listens for incoming spans and timer events to trigger batch sending.
 func (b *Batcher) Run() {
 	for {
 		select {
@@ -66,6 +72,8 @@ func (b *Batcher) Run() {
 //	}
 //}
 
+// Append adds a span to the current batch.
+// It checks rate limits and sends the batch if it's full.
 func (b *Batcher) Append(span *model.FlatSpan) {
 	if !b.rateLimiter.Allow() {
 		return
@@ -81,12 +89,14 @@ func (b *Batcher) Append(span *model.FlatSpan) {
 	}
 }
 
+// Flush clears the current batch buffer.
 func (b *Batcher) Flush() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.batchSpans = make([]*model.FlatSpan, 0, b.maxQueue)
 }
 
+// Send sends the current batch of spans to the output channel.
 func (b *Batcher) Send() {
 	b.mu.Lock()
 	if len(b.batchSpans) == 0 {

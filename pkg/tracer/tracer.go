@@ -13,6 +13,8 @@ import (
 	"tracer/pkg/utils"
 )
 
+// Tracer is the entry point for the tracing system.
+// It holds the configuration, reporter, sampler, and process information.
 type Tracer struct {
 	ServiceName string
 	Process     *model.Process
@@ -20,6 +22,8 @@ type Tracer struct {
 	Sampler     sampler.Sampler
 }
 
+// NewTracer creates a new Tracer instance with the given configuration and optional tags.
+// It initializes the reporter, sampler, and process information.
 func NewTracer(conf *config.Configuration, tags ...config.Tag) (*Tracer, error) {
 	tracer := new(Tracer)
 	err := tracer.init(conf, tags...)
@@ -30,6 +34,8 @@ func NewTracer(conf *config.Configuration, tags ...config.Tag) (*Tracer, error) 
 	return tracer, nil
 }
 
+// init initializes the Tracer with configuration and tags.
+// It sets up the reporter, sampler, and process details.
 func (t *Tracer) init(conf *config.Configuration, tags ...config.Tag) error {
 	t.ServiceName = conf.ServiceName
 	r, err := reporter.NewReporter(conf, tags...)
@@ -45,6 +51,8 @@ func (t *Tracer) init(conf *config.Configuration, tags ...config.Tag) error {
 	return nil
 }
 
+// StartSpan creates and starts a new Span with the given operation name and options.
+// Options can be used to set tags, references (child of, follow from), and start time.
 func (t *Tracer) StartSpan(operation string, options ...Option) *span.Span {
 
 	startSpanOption := new(StartSpanOption)
